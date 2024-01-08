@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  nginx-proxy:
+    container_name: nginx-proxy
+    image: nginxproxy/nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/vhost:/etc/nginx/vhost.d
+      - ./nginx/dhparam:/etc/nginx/dhparam
+      - ./nginx/html:/usr/share/nginx/html
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/proxy_logs:/var/log/nginx/
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    environment:
+      - VIRTUAL_HOST=server.local
+    restart: always
+
+  nextcloud:
+    container_name: nextcloud
+    image: linuxserver/nextcloud
+    environment:
+      - VIRTUAL_HOST=nextcloud.server.local
+      - TZ=Europe/Paris
+    volumes:
+      - ./nextcloud/appdata:/config
+      - ./nextcloud/data:/data
+    restart: always
+    depends_on:
+      - nginx-proxy
+
+  kuma:
+    container_name: kuma
+    image: louislam/uptime-kuma:1
+    expose:
+      - "3001"
+    environment:
+      - VIRTUAL_HOST=status.server.local
+      - VIRTUAL_PORT=3001
+    volumes:
+      - ./uptime-kuma/data:/app/data
+    depends_on:
+      - nginx-proxy
