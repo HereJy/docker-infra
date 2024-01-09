@@ -6,6 +6,9 @@ services:
     image: nginxproxy/nginx-proxy
     ports:
       - "80:80"
+      - "443:443"
+    environment:
+      - SSL_POLICY=Mozilla-Modern
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d
       - ./nginx/vhost:/etc/nginx/vhost.d
@@ -16,11 +19,27 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
     restart: always
 
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-ssl
+    environment:
+      - DEFAULT_EMAIL=name@email.com
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:rw
+      - ./acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - nginx-proxy
+
   nextcloud:
     container_name: nextcloud
     image: linuxserver/nextcloud
     environment:
       - VIRTUAL_HOST=nextcloud.server.local
+      - LETSENCRYPT_HOST=nextcloud.server.local
+      - DOMAIN=https://nextcloud.server.local
       - TZ=Europe/Paris
     volumes:
       - ./nextcloud/appdata:/config
@@ -36,6 +55,9 @@ services:
       - "3001"
     environment:
       - VIRTUAL_HOST=status.server.local
+      - LETSENCRYPT_HOST=status.server.local
+      - DOMAIN=https://status.server.local
+      - TZ=Europe/Paris
       - VIRTUAL_PORT=3001
     volumes:
       - ./uptime-kuma/data:/app/data
