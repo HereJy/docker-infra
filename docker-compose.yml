@@ -47,7 +47,7 @@ services:
       - ./nextcloud/data:/data
     restart: always
     depends_on:
-      - nginx-proxy
+      - acme-companion
 
   kuma:
     container_name: kuma
@@ -62,5 +62,6 @@ services:
       - VIRTUAL_PORT=3001
     volumes:
       - ./uptime-kuma/data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      - nginx-proxy
+      - acme-companion
